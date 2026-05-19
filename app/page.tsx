@@ -1,4 +1,5 @@
 "use client";
+import MarketChart from "@/components/MarketChart";
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -35,13 +36,6 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-const theme = {
-  gold: "#FFC857",
-  goldSoft: "#FFE2A3",
-  blue: "#38BDF8",
-  navy: "#060B14",
-};
 
 const assets = [
   { symbol: "XAU/USD", name: "Gold", price: "2,438.20", change: "+0.82%", trend: "up", category: "Metals", bias: "Bullish above 2428", risk: "Medium", volume: "High", score: 89 },
@@ -155,27 +149,43 @@ const innerPanel = "rounded-2xl border border-white/12 bg-[#020617]/45 shadow-[i
 export default function TradingMediaCompanyWebsite() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [marketData, setMarketData] = useState<any>(null);
+  const [news, setNews] = useState<any[]>([]);
   const [query, setQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("All");
   const [selectedChannel, setSelectedChannel] = useState("Markets");
   const [email, setEmail] = useState("");
   const [joined, setJoined] = useState(false);
   useEffect(() => {
-  const fetchMarkets = async () => {
-    try {
-      const response = await fetch("/api/markets");
-      const data = await response.json();
-      setMarketData(data.data);
-    } catch (error) {
-      console.error("Failed to fetch markets", error);
-    }
-  };
+    const fetchMarkets = async () => {
+      try {
+        const response = await fetch("/api/markets");
+        const data = await response.json();
+        setMarketData(data.data);
+      } catch (error) {
+        console.error("Failed to fetch markets", error);
+      }
+    };
 
-  fetchMarkets();
+    const fetchNews = async () => {
+      try {
+        const response = await fetch("/api/news");
+        const data = await response.json();
+        setNews(data.articles || []);
+      } catch (error) {
+        console.error("Failed to fetch news", error);
+      }
+    };
 
-  const interval = setInterval(fetchMarkets, 60000);
-  return () => clearInterval(interval);
-}, []);
+    fetchMarkets();
+    fetchNews();
+
+    const interval = setInterval(() => {
+      fetchMarkets();
+      fetchNews();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const filteredAssets = useMemo(() => {
     return assets.filter((asset) => {
@@ -259,13 +269,17 @@ export default function TradingMediaCompanyWebsite() {
 
       <section className="border-b border-white/12 bg-[#020617]/45 py-3 shadow-[0_0_40px_rgba(56,189,248,0.06)]">
         <div className="mx-auto flex max-w-[1500px] gap-6 overflow-hidden px-4 text-sm lg:px-8">
-          {assets.slice(0, 10).map((item) => (
-            <div key={item.symbol} className="flex shrink-0 items-center gap-2">
-              <span className="font-black text-white">{item.symbol}</span>
-              <span className="text-slate-400">{item.price}</span>
-              <span className={item.trend === "up" ? "text-emerald-400" : "text-rose-400"}>{item.change}</span>
-            </div>
-          ))}
+          {assets.slice(0, 10).map((item) => {
+            const liveItem = getLiveAsset(item);
+
+            return (
+              <div key={liveItem.symbol} className="flex shrink-0 items-center gap-2">
+                <span className="font-black text-white">{liveItem.symbol}</span>
+                <span className="text-slate-400">{liveItem.price}</span>
+                <span className={liveItem.trend === "up" ? "text-emerald-400" : "text-rose-400"}>{liveItem.change}</span>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -379,18 +393,22 @@ export default function TradingMediaCompanyWebsite() {
                 </div>
                 <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search gold, nifty, bitcoin..." className="rounded-2xl border-white/12 bg-[#020617]/45 text-white placeholder:text-slate-500" />
                 <div className="mt-4 grid gap-3">
-                  {filteredAssets.slice(0, 5).map((asset) => (
-                    <div key={asset.symbol} className={`${innerPanel} flex items-center justify-between p-3`}>
-                      <div>
-                        <p className="font-black text-white">{asset.symbol}</p>
-                        <p className="text-xs text-slate-400">{asset.name}</p>
+                  {filteredAssets.slice(0, 5).map((asset) => {
+                    const liveAsset = getLiveAsset(asset);
+
+                    return (
+                      <div key={liveAsset.symbol} className={`${innerPanel} flex items-center justify-between p-3`}>
+                        <div>
+                          <p className="font-black text-white">{liveAsset.symbol}</p>
+                          <p className="text-xs text-slate-400">{liveAsset.name}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-white">{liveAsset.price}</p>
+                          <p className={liveAsset.trend === "up" ? "text-xs font-bold text-emerald-400" : "text-xs font-bold text-rose-400"}>{liveAsset.change}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-white">{asset.price}</p>
-                        <p className={asset.trend === "up" ? "text-xs font-bold text-emerald-400" : "text-xs font-bold text-rose-400"}>{asset.change}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -423,7 +441,9 @@ export default function TradingMediaCompanyWebsite() {
             ))}
           </div>
         </section>
-
+<section className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8">
+  <MarketChart />
+</section>
         <section id="markets" className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8">
           <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
@@ -580,6 +600,71 @@ export default function TradingMediaCompanyWebsite() {
               </CardContent>
             </Card>
           </div>
+        </section>
+
+        <section className="mx-auto max-w-[1500px] px-4 py-12 lg:px-8">
+          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-[#FFC857]">Live News</p>
+              <h2 className="mt-2 text-3xl font-black md:text-5xl">Market Intelligence Feed</h2>
+            </div>
+            <p className="max-w-xl text-sm leading-7 text-slate-400">
+              Fresh headlines pulled from your news API and formatted into a premium MQRKT-style intelligence feed.
+            </p>
+          </div>
+
+          {news.length === 0 ? (
+            <Card className={panel}>
+              <CardContent className="p-6">
+                <p className="text-sm text-slate-400">Loading live news feed...</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-3">
+              {news.map((article, index) => (
+                <a
+                  key={`${article.url}-${index}`}
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group overflow-hidden rounded-3xl border border-white/12 bg-white/[0.055] shadow-[0_0_34px_rgba(56,189,248,0.04)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-[#38BDF8]/35 hover:bg-white/[0.09] hover:shadow-[0_0_34px_rgba(56,189,248,0.10)]"
+                >
+                  {article.image && (
+                    <img
+                      src={article.image}
+                      alt={article.title || "Market news"}
+                      className="h-52 w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  )}
+
+                  <div className="p-5">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-[#FFC857]">
+                        {article.source || "Market News"}
+                      </p>
+                      <span className="rounded-full bg-[#38BDF8]/10 px-3 py-1 text-xs font-bold text-[#38BDF8]">
+                        Live
+                      </span>
+                    </div>
+
+                    <h3 className="line-clamp-2 text-xl font-black leading-tight text-white group-hover:text-[#FFE2A3]">
+                      {article.title}
+                    </h3>
+
+                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-400">
+                      {article.summary || "Open the article to read the full story."}
+                    </p>
+
+                    {article.publishedAt && (
+                      <p className="mt-5 text-xs text-slate-500">
+                        {new Date(article.publishedAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="mx-auto max-w-[1500px] px-4 pb-12 lg:px-8">

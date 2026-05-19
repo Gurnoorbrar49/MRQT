@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Activity,
@@ -154,11 +154,28 @@ const innerPanel = "rounded-2xl border border-white/12 bg-[#020617]/45 shadow-[i
 
 export default function TradingMediaCompanyWebsite() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [marketData, setMarketData] = useState<any>(null);
   const [query, setQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("All");
   const [selectedChannel, setSelectedChannel] = useState("Markets");
   const [email, setEmail] = useState("");
   const [joined, setJoined] = useState(false);
+  useEffect(() => {
+  const fetchMarkets = async () => {
+    try {
+      const response = await fetch("/api/markets");
+      const data = await response.json();
+      setMarketData(data.data);
+    } catch (error) {
+      console.error("Failed to fetch markets", error);
+    }
+  };
+
+  fetchMarkets();
+
+  const interval = setInterval(fetchMarkets, 60000);
+  return () => clearInterval(interval);
+}, []);
 
   const filteredAssets = useMemo(() => {
     return assets.filter((asset) => {
@@ -170,6 +187,23 @@ export default function TradingMediaCompanyWebsite() {
 
   const handleJoin = () => {
     if (email.trim().includes("@")) setJoined(true);
+  };
+
+  const getLiveAsset = (asset: any) => {
+    if (!marketData) return asset;
+
+    const live = marketData[asset.symbol];
+
+    if (!live || live.status === "error") return asset;
+
+    const changeNumber = Number(live.percent_change || 0);
+
+    return {
+      ...asset,
+      price: live.close || asset.price,
+      change: `${changeNumber >= 0 ? "+" : ""}${changeNumber.toFixed(2)}%`,
+      trend: changeNumber >= 0 ? "up" : "down",
+    };
   };
 
   return (
@@ -186,7 +220,7 @@ export default function TradingMediaCompanyWebsite() {
               <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-rose-400 ring-4 ring-[#060B14]" />
             </div>
             <div>
-              <p className="text-xl font-black tracking-tight">ApexWire</p>
+              <p className="text-xl font-black tracking-tight">MQRKT</p>
               <p className="text-xs uppercase tracking-[0.22em] text-slate-400">AI Financial Intelligence</p>
             </div>
           </div>
@@ -245,7 +279,7 @@ export default function TradingMediaCompanyWebsite() {
               Understand markets, power, money and viral moments — <span className="bg-gradient-to-r from-[#FFC857] to-[#38BDF8] bg-clip-text text-transparent">before the crowd.</span>
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">
-              ApexWire is an AI-native finance media platform combining market data, global news, tech, politics, viral clips, trading briefs and risk-first intelligence in one premium daily habit.
+              MQRKT is an AI-native finance media platform combining market data, global news, tech, politics, viral clips, trading briefs and risk-first intelligence in one premium daily habit.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button className="h-14 rounded-2xl bg-gradient-to-r from-[#FFC857] to-[#38BDF8] px-7 text-base font-black text-black shadow-lg shadow-[#FFC857]/20 hover:opacity-90">
@@ -403,32 +437,36 @@ export default function TradingMediaCompanyWebsite() {
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {filteredAssets.map((asset) => (
-              <Card key={asset.symbol} className="rounded-3xl border-white/12 bg-white/[0.055] shadow-[0_0_34px_rgba(56,189,248,0.04)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-[#38BDF8]/35 hover:bg-white/[0.09] hover:shadow-[0_0_34px_rgba(56,189,248,0.10)]">
+          {filteredAssets.map((asset) => {
+  const liveAsset = getLiveAsset(asset);
+
+  return (
+              <Card key={liveAsset.symbol} className="rounded-3xl border-white/12 bg-white/[0.055] shadow-[0_0_34px_rgba(56,189,248,0.04)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-[#38BDF8]/35 hover:bg-white/[0.09] hover:shadow-[0_0_34px_rgba(56,189,248,0.10)]">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xl font-black text-white">{asset.symbol}</p>
-                      <p className="text-sm text-slate-400">{asset.name}</p>
+                      <p className="text-xl font-black text-white">{liveAsset.symbol}</p>
+                      <p className="text-sm text-slate-400">{liveAsset.name}</p>
                     </div>
                     <BarChart3 className="h-6 w-6 text-[#38BDF8]" />
                   </div>
-                  <p className="mt-6 text-3xl font-black text-white">{asset.price}</p>
+                  <p className="mt-6 text-3xl font-black text-white">{liveAsset.price}</p>
                   <div className="mt-2 flex items-center gap-2">
-                    {asset.trend === "up" ? <TrendingUp className="h-4 w-4 text-emerald-400" /> : <TrendingDown className="h-4 w-4 text-rose-400" />}
-                    <span className={asset.trend === "up" ? "font-black text-emerald-400" : "font-black text-rose-400"}>{asset.change}</span>
+                    {liveAsset.trend === "up" ? <TrendingUp className="h-4 w-4 text-emerald-400" /> : <TrendingDown className="h-4 w-4 text-rose-400" />}
+                    <span className={liveAsset.trend === "up" ? "font-black text-emerald-400" : "font-black text-rose-400"}>{liveAsset.change}</span>
                   </div>
                   <div className={`${innerPanel} mt-5 p-3`}>
                     <p className="text-xs uppercase tracking-wider text-slate-400">AI bias</p>
-                    <p className="mt-1 font-bold text-slate-200">{asset.bias}</p>
+                    <p className="mt-1 font-bold text-slate-200">{liveAsset.bias}</p>
                     <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-                      <div className="h-full rounded-full bg-gradient-to-r from-[#FFC857] to-[#38BDF8] shadow-[0_0_18px_rgba(255,200,87,0.45)]" style={{ width: `${asset.score}%` }} />
+                      <div className="h-full rounded-full bg-gradient-to-r from-[#FFC857] to-[#38BDF8] shadow-[0_0_18px_rgba(255,200,87,0.45)]" style={{ width: `${liveAsset.score}%` }} />
                     </div>
-                    <p className="mt-2 text-xs text-slate-400">Risk: {asset.risk} • Volume: {asset.volume}</p>
+                    <p className="mt-2 text-xs text-slate-400">Risk: {liveAsset.risk} • Volume: {liveAsset.volume}</p>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+  );
+})}
           </div>
         </section>
 
@@ -464,7 +502,7 @@ export default function TradingMediaCompanyWebsite() {
           <div>
             <p className="text-xs font-black uppercase tracking-[0.3em] text-[#FFC857]">Viral Intelligence</p>
             <h2 className="mt-2 text-3xl font-black md:text-5xl">The stories people share</h2>
-            <p className="mt-5 max-w-xl text-sm leading-7 text-slate-400">ApexWire should capture attention through viral world-leader moments, CEO clips, AI culture, political drama and market-moving social clips.</p>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-slate-400">MQRKT should capture attention through viral world-leader moments, CEO clips, AI culture, political drama and market-moving social clips.</p>
           </div>
           <div className="grid gap-4">
             {viralClips.map((video) => (
@@ -554,7 +592,7 @@ export default function TradingMediaCompanyWebsite() {
 
       <footer className="border-t border-white/12 px-4 py-8 lg:px-8">
         <div className="mx-auto flex max-w-[1500px] flex-col justify-between gap-4 text-sm text-slate-400 md:flex-row md:items-center">
-          <p>© 2026 ApexWire. Market education and media only. Not financial advice.</p>
+          <p>© 2026 MQRKT. Market education and media only. Not financial advice.</p>
           <div className="flex flex-wrap gap-5">
             <span>Risk Disclaimer</span>
             <span>Editorial Policy</span>

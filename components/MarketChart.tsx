@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createChart,
   ColorType,
@@ -9,6 +9,8 @@ import {
 
 export default function MarketChart() {
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [symbol, setSymbol] = useState("XAU/USD");
+const [interval, setIntervalValue] = useState("1day");
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -28,13 +30,16 @@ export default function MarketChart() {
 
     const candlestickSeries = chart.addSeries(CandlestickSeries);
 
-    candlestickSeries.setData([
-      { time: "2026-05-14", open: 2420, high: 2432, low: 2414, close: 2428 },
-      { time: "2026-05-15", open: 2428, high: 2440, low: 2422, close: 2438 },
-      { time: "2026-05-16", open: 2438, high: 2448, low: 2431, close: 2442 },
-      { time: "2026-05-17", open: 2442, high: 2455, low: 2436, close: 2450 },
-      { time: "2026-05-18", open: 2450, high: 2462, low: 2441, close: 2458 },
-    ]);
+const loadCandles = async () => {
+ const response = await fetch(
+  `/api/history?symbol=${symbol}&interval=${interval}`
+);
+  const data = await response.json();
+
+  candlestickSeries.setData(data.candles || []);
+};
+
+loadCandles();
 
     chart.timeScale().fitContent();
 
@@ -50,7 +55,7 @@ export default function MarketChart() {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, []);
+  }, [symbol, interval]);
 
   return (
     <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#020617]/60 p-4 backdrop-blur-xl">
@@ -60,9 +65,42 @@ export default function MarketChart() {
             Live Chart
           </p>
 
-          <h2 className="mt-2 text-2xl font-black text-white">
-            Gold Market Structure
-          </h2>
+          <div className="flex flex-wrap items-center gap-3">
+  {["XAU/USD", "EUR/USD", "BTC/USD", "NVDA"].map((item) => (
+    <button
+      key={item}
+      onClick={() => setSymbol(item)}
+      className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+        symbol === item
+          ? "bg-[#FFC857] text-black"
+          : "bg-white/10 text-white hover:bg-white/20"
+      }`}
+    >
+      {item}
+    </button>
+  ))}
+</div>
+
+<div className="mt-4 flex flex-wrap gap-2">
+  {[
+    ["1h", "1H"],
+    ["4h", "4H"],
+    ["1day", "1D"],
+    ["1week", "1W"],
+  ].map(([value, label]) => (
+    <button
+      key={value}
+      onClick={() => setIntervalValue(value)}
+      className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+        interval === value
+          ? "bg-[#38BDF8] text-black"
+          : "bg-white/10 text-white hover:bg-white/20"
+      }`}
+    >
+      {label}
+    </button>
+  ))}
+</div>
         </div>
 
         <div className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400">

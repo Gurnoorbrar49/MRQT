@@ -1,21 +1,23 @@
 import Groq from "groq-sdk";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+export async function GET(req: NextRequest) {
+  const apiKey = process.env.GROQ_API_KEY;
 
-export async function GET() {
-  if (!process.env.GROQ_API_KEY) {
+  if (!apiKey) {
     return NextResponse.json(
       { error: "Missing GROQ_API_KEY" },
       { status: 500 }
     );
   }
 
+  const groq = new Groq({ apiKey });
+
   try {
-    const marketRes = await fetch("http://127.0.0.1:3000/api/markets");
-    const newsRes = await fetch("http://127.0.0.1:3000/api/news");
+    const origin = req.nextUrl.origin;
+
+    const marketRes = await fetch(`${origin}/api/markets`);
+    const newsRes = await fetch(`${origin}/api/news`);
 
     const marketData = await marketRes.json();
     const newsData = await newsRes.json();
@@ -26,12 +28,12 @@ export async function GET() {
         {
           role: "system",
           content:
-            "You are the AI market analyst for MQRKT, a premium financial intelligence platform. Be concise, professional, risk-aware, and never give financial advice.",
+            "You are the AI market analyst for MQRKT. Be concise, premium, risk-aware, and do not provide financial advice.",
         },
         {
           role: "user",
           content: `
-Create a premium daily market brief using the data below.
+Create a premium daily market brief using this data.
 
 Market data:
 ${JSON.stringify(marketData).slice(0, 3000)}
@@ -39,15 +41,12 @@ ${JSON.stringify(marketData).slice(0, 3000)}
 News data:
 ${JSON.stringify(newsData).slice(0, 3000)}
 
-Return exactly in this structure:
-
+Return exactly:
 Market Mood:
 Gold Bias:
 Forex Bias:
 Key Risks:
 What Traders Should Watch:
-
-Keep it clear, short, and useful for traders.
 `,
         },
       ],
@@ -59,8 +58,6 @@ Keep it clear, short, and useful for traders.
       brief: completion.choices[0]?.message?.content || "",
     });
   } catch (error: any) {
-    console.error("Groq AI Brief Error:", error);
-
     return NextResponse.json(
       {
         error: "Failed to generate AI brief",

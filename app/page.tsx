@@ -377,18 +377,29 @@ export default function TradingMediaCompanyWebsite() {
                   </div>
                 </div>
                 <div className="grid gap-3 p-5 sm:grid-cols-2">
-                  {[
-                    ["Best opportunity", "Gold NY session", Award],
-                    ["News risk", "Medium", Gauge],
-                    ["Market mood", "Risk-on mixed", Activity],
-                    ["Next catalyst", "US data", CalendarDays],
-                  .map(([label, value, Icon]: [string, string, any]) => (
-                    <div key={label} className={`${innerPanel} p-4`}>
-                      <Icon className="mb-3 h-5 w-5 text-[#38BDF8]" />
-                      <p className="text-xs uppercase tracking-wider text-slate-400">{label}</p>
-                      <p className="text-lg font-black text-white">{value}</p>
-                    </div>
-                  ))}
+                  <div className={`${innerPanel} p-4`}>
+                    <Award className="mb-3 h-5 w-5 text-[#38BDF8]" />
+                    <p className="text-xs uppercase tracking-wider text-slate-400">Best opportunity</p>
+                    <p className="text-lg font-black text-white">Gold NY session</p>
+                  </div>
+
+                  <div className={`${innerPanel} p-4`}>
+                    <Gauge className="mb-3 h-5 w-5 text-[#38BDF8]" />
+                    <p className="text-xs uppercase tracking-wider text-slate-400">News risk</p>
+                    <p className="text-lg font-black text-white">Medium</p>
+                  </div>
+
+                  <div className={`${innerPanel} p-4`}>
+                    <Activity className="mb-3 h-5 w-5 text-[#38BDF8]" />
+                    <p className="text-xs uppercase tracking-wider text-slate-400">Market mood</p>
+                    <p className="text-lg font-black text-white">Risk-on mixed</p>
+                  </div>
+
+                  <div className={`${innerPanel} p-4`}>
+                    <CalendarDays className="mb-3 h-5 w-5 text-[#38BDF8]" />
+                    <p className="text-xs uppercase tracking-wider text-slate-400">Next catalyst</p>
+                    <p className="text-lg font-black text-white">US data</p>
+                  </div>
                 </div>
                 <div className="border-t border-white/12 p-5">
                   <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-slate-400">AI summary</p>

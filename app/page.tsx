@@ -1,4 +1,10 @@
 "use client";
+import SentimentBar from "@/components/SentimentBar";
+import WatchlistButton from "@/components/WatchlistButton";
+import LiveTicker from "@/components/LiveTicker";
+import MyWatchlist from "@/components/MyWatchlist";
+import AuthPanel from "@/components/AuthPanel";
+import LiveSidebar from "@/components/LiveSidebar";
 import MarketChart from "@/components/MarketChart";
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
@@ -148,8 +154,10 @@ const innerPanel = "rounded-2xl border border-white/12 bg-[#020617]/45 shadow-[i
 
 export default function TradingMediaCompanyWebsite() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const [marketData, setMarketData] = useState<any>(null);
   const [news, setNews] = useState<any[]>([]);
+  const [aiBrief, setAiBrief] = useState("");
   const [query, setQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("All");
   const [selectedChannel, setSelectedChannel] = useState("Markets");
@@ -176,12 +184,24 @@ export default function TradingMediaCompanyWebsite() {
       }
     };
 
+    const fetchAiBrief = async () => {
+      try {
+        const response = await fetch("/api/ai-brief");
+        const data = await response.json();
+        setAiBrief(data.brief || "");
+      } catch (error) {
+        console.error("Failed to fetch AI brief", error);
+      }
+    };
+
     fetchMarkets();
     fetchNews();
+    fetchAiBrief();
 
     const interval = setInterval(() => {
       fetchMarkets();
       fetchNews();
+      fetchAiBrief();
     }, 60000);
 
     return () => clearInterval(interval);
@@ -244,7 +264,13 @@ export default function TradingMediaCompanyWebsite() {
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
-            <Button variant="ghost" className="rounded-2xl text-slate-200 hover:bg-white/10 hover:text-white">Login</Button>
+            <Button
+  variant="ghost"
+  onClick={() => setAuthOpen(true)}
+  className="rounded-2xl text-slate-200 hover:bg-white/10 hover:text-white"
+>
+  Login
+</Button>
             <Button className="rounded-2xl bg-gradient-to-r from-[#FFC857] to-[#38BDF8] font-black text-black shadow-lg shadow-[#FFC857]/20 hover:opacity-90">Open Terminal</Button>
           </div>
 
@@ -282,8 +308,25 @@ export default function TradingMediaCompanyWebsite() {
           })}
         </div>
       </section>
+      {authOpen && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md">
+    <div className="relative w-full max-w-lg px-4">
+      <button
+        onClick={() => setAuthOpen(false)}
+        className="absolute right-7 top-5 text-white/60 hover:text-white"
+      >
+        ✕
+      </button>
 
+      <AuthPanel />
+    </div>
+  </div>
+)}
+<LiveTicker />
       <main>
+        <SentimentBar />
+        <LiveSidebar />
+        <MyWatchlist />
         <section className="mx-auto grid max-w-[1500px] gap-6 px-4 py-8 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:py-12">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#FFC857]/30 bg-[#FFC857]/10 px-4 py-2 text-sm font-bold text-[#FFE2A3] shadow-lg shadow-[#FFC857]/5">
@@ -349,8 +392,8 @@ export default function TradingMediaCompanyWebsite() {
                 </div>
                 <div className="border-t border-white/12 p-5">
                   <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-slate-400">AI summary</p>
-                  <p className="text-sm leading-7 text-slate-300">
-                    Gold and yen pairs remain the cleanest volatility plays. Tech attention is led by AI infrastructure, while political comments may drive dollar and bond-yield moves. Avoid overtrading before major data releases.
+                  <p className="whitespace-pre-line text-sm leading-7 text-slate-300">
+                    {aiBrief || "Generating AI market brief..."}
                   </p>
                 </div>
               </CardContent>
@@ -468,7 +511,10 @@ export default function TradingMediaCompanyWebsite() {
                       <p className="text-xl font-black text-white">{liveAsset.symbol}</p>
                       <p className="text-sm text-slate-400">{liveAsset.name}</p>
                     </div>
-                    <BarChart3 className="h-6 w-6 text-[#38BDF8]" />
+                   <div className="flex items-center gap-2">
+  <WatchlistButton symbol={liveAsset.symbol} name={liveAsset.name} />
+  <BarChart3 className="h-6 w-6 text-[#38BDF8]" />
+</div>
                   </div>
                   <p className="mt-6 text-3xl font-black text-white">{liveAsset.price}</p>
                   <div className="mt-2 flex items-center gap-2">

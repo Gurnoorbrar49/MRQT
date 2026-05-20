@@ -382,7 +382,7 @@ export default function TradingMediaCompanyWebsite() {
                     ["News risk", "Medium", Gauge],
                     ["Market mood", "Risk-on mixed", Activity],
                     ["Next catalyst", "US data", CalendarDays],
-                  .map(([label, value, Icon]: any) => (
+                  .map(([label, value, Icon]: [string, string, any]) => (
                     <div key={label} className={`${innerPanel} p-4`}>
                       <Icon className="mb-3 h-5 w-5 text-[#38BDF8]" />
                       <p className="text-xs uppercase tracking-wider text-slate-400">{label}</p>
